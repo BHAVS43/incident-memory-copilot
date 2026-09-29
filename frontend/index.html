@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incident Memory Copilot</title>
+<style>
+:root{
+  --bg:#070b16; --panel:#0e1629; --panel2:#111c33; --border:#263653;
+  --text:#e9eefb; --muted:#93a2bf; --accent:#6f9cff; --accent2:#8b7cff;
+  --green:#4dd4a4; --amber:#f3bd5f; --red:#f27b88;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 15% 0%,#122044 0,#070b16 38%);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,textarea{font:inherit}
+.container{max-width:1500px;margin:auto;padding:28px}
+header{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:24px}
+.brand h1{margin:0;font-size:27px;letter-spacing:-.5px}
+.brand p{margin:6px 0 0;color:var(--muted)}
+.status{display:flex;align-items:center;gap:9px;border:1px solid var(--border);background:#0c1426;padding:10px 14px;border-radius:999px;font-size:13px;color:#b9c6de}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px #4dd4a4}
+.panel{background:linear-gradient(180deg,rgba(17,28,51,.96),rgba(11,19,35,.96));border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 16px 45px rgba(0,0,0,.18)}
+.panel h2{margin:0;font-size:20px}
+.sub{color:var(--muted);margin:7px 0 0;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.formgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.field label{display:block;color:#aebbd4;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}
+input,textarea{width:100%;background:#080f20;color:var(--text);border:1px solid #2b3b5a;border-radius:10px;padding:12px 13px;outline:none}
+textarea{min-height:92px;resize:vertical}
+input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(111,156,255,.12)}
+.full{grid-column:1/-1}
+.actions{display:flex;align-items:center;gap:12px;margin-top:17px}
+.primary{border:0;border-radius:10px;background:linear-gradient(135deg,#668fff,#806cff);color:white;font-weight:800;padding:12px 18px;cursor:pointer}
+.primary:disabled{opacity:.55;cursor:not-allowed}
+.hint{color:var(--muted);font-size:13px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.metric{background:#0a1222;border:1px solid #233452;border-radius:13px;padding:16px}
+.metric .value{font-size:25px;font-weight:800;margin-top:5px}
+.metric .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:13px}
+.badge{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;padding:5px 8px;border-radius:999px;background:rgba(111,156,255,.12);color:#9db9ff;border:1px solid rgba(111,156,255,.25)}
+.badge.green{color:#72e4bc;background:rgba(77,212,164,.08);border-color:rgba(77,212,164,.2)}
+.content{line-height:1.65;color:#d6deee}
+.content h3{font-size:14px;color:#8eacff;margin:0 0 8px}
+.content p{margin:0 0 12px}
+.empty{color:var(--muted);font-size:14px;padding:16px;border:1px dashed #2a3956;border-radius:12px}
+.memory-list{display:flex;flex-direction:column;gap:9px;max-height:420px;overflow:auto}
+.memory{padding:12px 13px;border:1px solid #243453;background:#091222;border-radius:10px;font-size:13px;line-height:1.55;color:#cbd5e8}
+.memory strong{color:#9fb7ff}
+.patterns{display:flex;flex-direction:column;gap:10px}
+.pattern{border:1px solid #273754;background:#0a1324;border-radius:12px;padding:14px}
+.pattern .name{font-weight:800;color:#eaf0ff;margin-bottom:7px}
+.pattern .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px}
+.pattern .cell span{display:block;color:#71819e;text-transform:uppercase;font-size:10px;font-weight:800;letter-spacing:.08em;margin-bottom:3px}
+.cause{border:1px solid rgba(111,156,255,.28);background:linear-gradient(135deg,rgba(47,75,140,.18),rgba(22,31,57,.5));border-radius:14px;padding:17px}
+.cause h3{margin:0 0 8px;color:#a7c0ff;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.cause .main{font-size:18px;font-weight:800;line-height:1.45}
+.evidence{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+.incident-chip{border:1px solid #33466b;background:#0a1324;color:#b9caff;border-radius:999px;padding:6px 9px;font-size:12px;font-weight:700}
+.playbook{display:flex;flex-direction:column;gap:12px}
+.step{display:grid;grid-template-columns:42px 1fr;gap:13px;padding:16px;border:1px solid #293b5e;background:#0a1325;border-radius:14px}
+.num{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#284887;color:#dce7ff;font-weight:900}
+.step h3{margin:0 0 6px;font-size:16px}
+.step .action{color:#e4eafb;line-height:1.6}
+.why{margin-top:11px;border-left:2px solid #526fa9;padding-left:11px;color:#9eacce;font-size:13px}
+.why strong{color:#b9caff}
+.source-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.source{font-size:10px;text-transform:uppercase;font-weight:800;letter-spacing:.07em;border-radius:999px;padding:5px 8px}
+.source.history{color:#72e4bc;background:rgba(77,212,164,.08);border:1px solid rgba(77,212,164,.22)}
+.source.ai{color:#b4a9ff;background:rgba(139,124,255,.08);border:1px solid rgba(139,124,255,.22)}
+.learn{border:1px solid rgba(77,212,164,.25);background:linear-gradient(135deg,rgba(77,212,164,.08),rgba(16,31,43,.55))}
+.learn h2{color:#9af0d0}
+.raw{white-space:pre-wrap;background:#080f1e;border:1px solid #253654;border-radius:12px;padding:15px;color:#b8c5dd;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;max-height:500px;overflow:auto}
+.error{color:#ffadb5;background:rgba(242,123,136,.08);border:1px solid rgba(242,123,136,.2);padding:12px;border-radius:10px}
+.hidden{display:none!important}
+@media(max-width:900px){.grid,.formgrid,.metrics,.two{grid-template-columns:1fr}.container{padding:16px}.step{grid-template-columns:35px 1fr}}
+
+.evidence-card{border:1px solid #243656;background:#091224;border-radius:14px;padding:16px;margin:10px 0}.evidence-card-top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.evidence-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.evidence-grid span{display:block;text-transform:uppercase;font-size:11px;letter-spacing:.08em;color:#7f91b3;font-weight:700;margin-bottom:5px}.evidence-grid p{margin:0;color:#d7e0f2;line-height:1.5}@media(max-width:800px){.evidence-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="brand">
+    <h1>Incident Memory Copilot</h1>
+    <p>Organizational incident intelligence powered by Hindsight</p>
+  </div>
+  <div class="status"><span class="dot"></span> Hindsight Connected</div>
+</header>
+
+<section class="panel">
+  <h2>Current Production Incident</h2>
+  <p class="sub">Describe only what is happening now. The organization’s previous experience is retrieved automatically.</p>
+  <div class="formgrid">
+    <div class="field"><label>Incident ID</label><input id="incidentId" placeholder="e.g. INC-021"></div>
+    <div class="field"><label>Service</label><input id="service" placeholder="e.g. payment-api"></div>
+    <div class="field"><label>Error Rate</label><input id="errorRate" placeholder="e.g. 62%"></div>
+    <div class="field full"><label>Symptom</label><textarea id="symptom" placeholder="Describe what is happening right now..."></textarea></div>
+    <div class="field"><label>Started</label><input id="started" placeholder="e.g. 11 minutes ago"></div>
+    <div class="field"><label>Recent Deployment</label><input id="deployment" placeholder="e.g. No deployment in the last 3 hours"></div>
+  </div>
+  <div class="actions">
+    <button class="primary" id="analyzeBtn" onclick="analyze()">Analyze with Organizational Memory</button>
+    <span class="hint" id="statusText">Hindsight will recall relevant organizational experience first.</span>
+  </div>
+</section>
+
+<div id="results" class="hidden">
+<section class="panel">
+  <div class="section-title">
+    <div><h2>Organizational Memory</h2><p class="sub">What Hindsight recalled before the AI formed its recommendation.</p></div>
+    <span class="badge green">Memory First</span>
+  </div>
+  <div class="metrics">
+    <div class="metric"><div class="label">Memories Recalled</div><div class="value" id="memoryCount">—</div></div>
+    <div class="metric"><div class="label">Historical Incidents Referenced</div><div class="value" id="incidentCount">—</div></div>
+    <div class="metric"><div class="label">Patterns Identified</div><div class="value" id="patternCount">—</div></div>
+  </div>
+</section>
+
+<section class="two">
+  <section class="panel">
+    <div class="section-title"><h2>Retrieved Experience</h2><span class="badge">Hindsight</span></div>
+    <div id="memories" class="memory-list"></div>
+  </section>
+
+  <section class="panel">
+    <div class="section-title"><h2>Current Assessment</h2><span class="badge">AI Synthesis</span></div>
+    <div id="assessment" class="content"></div>
+    <div id="cause" class="cause hidden"></div>
+  </section>
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <div><h2>Organizational Patterns</h2><p class="sub">Patterns extracted from the recalled historical incidents.</p></div>
+    <span class="badge green">Historical Evidence</span>
+  </div>
+  <div id="patterns" class="patterns"></div>
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <div><h2>Organizational Resolution Playbook</h2><p class="sub">A practical sequence synthesized from the organization’s prior incident experience.</p></div>
+    <span class="badge">Hindsight + AI</span>
+  </div>
+  <div id="playbook" class="playbook"></div>
+</section>
+
+<section class="panel" id="investigationPanel">
+  <div class="section-title">
+    <div>
+      <h2>Continue Investigation</h2>
+      <p class="sub">If a recommended step did not work, add the new evidence and ask the copilot to reassess. Failed hypotheses are not automatically stored as organizational truth.</p>
+    </div>
+    <span class="badge">Adaptive Loop</span>
+  </div>
+
+  <div class="actions" style="margin-top:0;margin-bottom:14px">
+    <button class="primary" id="workedBtn" onclick="showResolutionForm()">✓ It Worked — Resolve Incident</button>
+    <button class="primary" id="failedBtn" onclick="showAskAgain()">↻ It Didn't Work — Ask Again</button>
+  </div>
+
+  <div id="askAgainBox" class="hidden">
+    <div class="field">
+      <label>What happened when you tried the recommended step?</label>
+      <textarea id="followupEvidence" placeholder="e.g. The credential was verified as valid, but 401 errors are still occurring. We also confirmed there is no provider outage."></textarea>
+    </div>
+    <div class="actions">
+      <button class="primary" id="askAgainBtn" onclick="askAgain()">Ask Again with New Evidence</button>
+      <span class="hint">The new evidence is added to this investigation and Hindsight is recalled again.</span>
+    </div>
+  </div>
+
+  <div id="followupStatus" class="hidden" style="margin-top:14px;padding:14px;border-radius:12px;border:1px solid #2b3b5a;background:#0a1222;color:#cbd5e8;"></div>
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <div><h2>Why This Recommendation?</h2><p class="sub">The historical incidents that support the current hypothesis.</p></div>
+    <span class="badge green">Evidence</span>
+  </div>
+  <div id="evidence" class="content"></div>
+</section>
+
+<section class="panel learn">
+  <div class="section-title">
+    <div>
+      <h2>Incident Resolution & Organizational Learning</h2>
+      <p class="sub">Confirm what actually happened after the incident is resolved. The application automatically adds the confirmed experience to Hindsight for future developers.</p>
+    </div>
+    <span class="badge green">Auto-Learn</span>
+  </div>
+
+  <div id="resolveForm">
+    <div class="formgrid">
+      <div class="field full">
+        <label>Confirmed Root Cause</label>
+        <textarea id="rootCause" placeholder="What did you actually find?"></textarea>
+      </div>
+      <div class="field full">
+        <label>Resolution Applied</label>
+        <textarea id="resolution" placeholder="What actually fixed the incident?"></textarea>
+      </div>
+      <div class="field">
+        <label>Outcome</label>
+        <input id="outcome" placeholder="e.g. 401 errors stopped and payments recovered">
+      </div>
+      <div class="field">
+        <label>Resolution Time</label>
+        <input id="resolutionTime" placeholder="e.g. 7 minutes">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="resolveBtn" onclick="resolveAndLearn()">✓ Resolve Incident & Save to Organization Memory</button>
+      <span class="hint">This does not execute production changes. It records the confirmed incident outcome.</span>
+    </div>
+  </div>
+
+  <div id="learnSuccess" class="hidden" style="margin-top:16px;padding:15px;border:1px solid rgba(77,212,164,.3);background:rgba(77,212,164,.08);border-radius:12px;color:#b8f4df;">
+    <strong>✓ Incident resolved · Organization memory updated in Hindsight</strong>
+    <div id="learnMessage" style="margin-top:5px;color:#9fcab9;"></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="section-title"><h2>AI Analysis</h2><span class="badge">Raw model output</span></div>
+  <div id="raw" class="raw"></div>
+</section>
+</div>
+</div>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+
+function esc(v){
+  return String(v ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+
+function cleanMarkdown(s){
+  return String(s ?? "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/^>\s?/gm, "")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/^\s*---+\s*$/gm, "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\u00a0/g, " ")
+    .trim();
+}
+
+function normalizeHeadingLine(line){
+  return String(line || "")
+    .replace(/^\s*#{1,6}\s*/, "")
+    .replace(/^\s*\*\*(.*?)\*\*\s*$/, "$1")
+    .replace(/^\s*__(.*?)__\s*$/, "$1")
+    .trim()
+    .toUpperCase();
+}
+
+function section(text, title){
+  const lines = String(text || "").replace(/\r/g,"").split("\n");
+  const target = title.toUpperCase();
+  let start = -1;
+
+  for(let i=0;i<lines.length;i++){
+    if(normalizeHeadingLine(lines[i]) === target){
+      start = i + 1;
+      break;
+    }
+  }
+  if(start < 0) return "";
+
+  const headings = new Set([
+    "INCIDENT ASSESSMENT",
+    "ORGANIZATIONAL PATTERNS",
+    "MOST LIKELY ROOT CAUSE",
+    "HISTORICAL EVIDENCE",
+    "RESOLUTION PLAYBOOK",
+    "ALTERNATIVE CAUSES",
+    "RISKS AND CAVEATS",
+    "ORGANIZATIONAL LEARNING"
+  ]);
+
+  let end = lines.length;
+  for(let i=start;i<lines.length;i++){
+    if(headings.has(normalizeHeadingLine(lines[i]))){
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start,end).join("\n").trim();
+}
+
+function paragraphs(text){
+  const cleaned = cleanMarkdown(text);
+  if(!cleaned) return '<div class="empty">No section returned.</div>';
+  return cleaned.split(/\n\s*\n/).map(p => `<p>${esc(p).replace(/\n/g,"<br>")}</p>`).join("");
+}
+
+function extractIncidents(text){
+  const ids = new Set();
+  for(const m of String(text||"").matchAll(/\b(?:INC|HIST)-\d{3}\b/gi)) ids.add(m[0].toUpperCase());
+  return [...ids];
+}
+
+function renderMemories(memories){
+  const el = document.getElementById("memories");
+  if(!memories?.length){el.innerHTML='<div class="empty">No Hindsight memories were recalled.</div>';return;}
+  el.innerHTML = memories.map((m,i)=>{
+    const ids = extractIncidents(m);
+    return `<div class="memory"><strong>Memory ${i+1}</strong>${ids.length ? ` · ${ids.map(x=>`<span class="incident-chip">${esc(x)}</span>`).join(" ")}`:""}<br>${esc(cleanMarkdown(m))}</div>`;
+  }).join("");
+}
+
+function parseTable(text){
+  const rows = String(text||"").split("\n").map(x=>x.trim()).filter(x=>x.startsWith("|") && x.endsWith("|"));
+  const data = rows.filter(x=>!/^\\|\\s*:?-+/.test(x));
+  if(data.length < 2) return [];
+  const header = data[0].slice(1,-1).split("|").map(c=>cleanMarkdown(c.trim()).toLowerCase());
+  const start = header.some(h => /pattern|typical symptom|typical fix|typical resolution|historical reference/.test(h)) ? 1 : 0;
+  return data.slice(start).map(row=>row.slice(1,-1).split("|").map(c=>cleanMarkdown(c.trim())));
+}
+
+function renderPatterns(text){
+  const rows = parseTable(text);
+  const el = document.getElementById("patterns");
+  if(rows.length){
+    const validRows = rows.filter(r => {
+      const name = (r[0] || "").trim().toLowerCase();
+      const symptom = (r[1] || "").trim();
+      const resolution = (r[2] || "").trim();
+      return name && name !== "observed pattern" && (symptom || resolution);
+    });
+
+    el.innerHTML = validRows.length ? validRows.map(r=>{
+      const name=r[0]||"Historical pattern", symptom=r[1]||"—", resolution=r[2]||"—";
+      const ids=extractIncidents(r.join(" "));
+      return `<div class="pattern">
+        <div class="name">${esc(name)}</div>
+        <div class="row">
+          <div class="cell"><span>Typical symptom</span>${esc(symptom)}</div>
+          <div class="cell"><span>Typical resolution</span>${esc(resolution)}</div>
+        </div>
+        ${ids.length?`<div class="source-row">${ids.map(id=>`<span class="source history">${esc(id)}</span>`).join("")}`:""}
+      </div>`;
+    }).join("") : '<div class="empty">No usable organizational patterns returned.</div>';
+
+    document.getElementById("patternCount").textContent = validRows.length;
+    return;
+  }
+  const cleaned=cleanMarkdown(text);
+  const bullets=cleaned.split(/\n/).map(x=>x.replace(/^\s*[-*]\s+/,"").trim()).filter(Boolean);
+  el.innerHTML=bullets.length?bullets.map(x=>`<div class="pattern"><div class="name">${esc(x)}</div><span class="source history">Historical pattern</span></div>`).join(""):'<div class="empty">No structured patterns returned.</div>';
+  document.getElementById("patternCount").textContent=bullets.length||0;
+}
+
+function parsePlaybook(text){
+  const raw = String(text || "").replace(/\r/g,"").trim();
+
+  // First handle Markdown-table playbooks:
+  // | Step | Action | Why |
+  // | 1 | **Collect diagnostics** — inspect logs | Confirms ... |
+  const tableLines = raw.split("\n")
+    .map(x => x.trim())
+    .filter(x => x.startsWith("|") && x.endsWith("|"));
+
+  if(tableLines.length >= 2){
+    const rows = tableLines.slice(1).filter(row => {
+      const inner = row.slice(1,-1).trim();
+      return inner && !/^[-:\s|]+$/.test(inner);
+    });
+
+    const tableSteps = rows.map(row => {
+      const cells = row.slice(1,-1).split("|").map(c => cleanMarkdown(c.trim()));
+      if(cells.length < 3) return null;
+
+      const nMatch = cells[0].match(/\d+/);
+      if(!nMatch) return null;
+
+      let action = cells[1] || "";
+      let why = cells[2] || "";
+
+      // Some models put the title in bold followed by an em dash.
+      let title = "";
+      const dash = action.search(/\s+[-–—]\s+/);
+      if(dash > 0){
+        title = action.slice(0,dash).trim();
+        action = action.slice(dash).replace(/^\s*[-–—]\s*/,"").trim();
+      } else {
+        const colon = action.indexOf(":");
+        if(colon > 0 && colon < 90){
+          title = action.slice(0,colon).trim();
+          action = action.slice(colon+1).trim();
+        } else {
+          const words = action.split(/\s+/);
+          title = words.slice(0,Math.min(8,words.length)).join(" ");
+        }
+      }
+
+      // Remove model-generated HTML artifacts from action/why.
+      action = action.replace(/<br\s*\/?>/gi," ").replace(/<[^>]+>/g,"").trim();
+      why = why.replace(/<br\s*\/?>/gi," ").replace(/<[^>]+>/g,"").trim();
+
+      return {n:nMatch[0], title, action, why};
+    }).filter(Boolean);
+
+    if(tableSteps.length) return tableSteps;
+  }
+
+  const cleaned = raw
+    .replace(/\*\*/g,"")
+    .replace(/^\s*#{1,6}\s*/gm,"")
+    .replace(/<br\s*\/?>/gi," ")
+    .replace(/<[^>]+>/g,"")
+    .trim();
+
+  const matches = [...cleaned.matchAll(/(?:^|\n)\s*(\d+)\.\s+([\s\S]*?)(?=\n\s*\d+\.\s+|$)/g)];
+
+  return matches.map(m=>{
+    let block = m[2].trim();
+    let why = "";
+
+    const whyMatch = block.match(/(?:^|\n)\s*(?:\*?Why\*?|Rationale|Reason)\s*:\s*(.*)$/is);
+    if(whyMatch){
+      why = whyMatch[1].trim();
+      block = block.slice(0, whyMatch.index).trim();
+    }
+
+    let title = "";
+    let action = block.replace(/\n+/g," ").replace(/\s{2,}/g," ").trim();
+    const dash = action.search(/\s+[-–—]\s+/);
+
+    if(dash > 0){
+      title = action.slice(0,dash).trim();
+      action = action.slice(dash).replace(/^\s+[-–—]\s+/,"").trim();
+    } else {
+      const colon = action.indexOf(":");
+      if(colon > 0 && colon < 90){
+        title = action.slice(0,colon).trim();
+        action = action.slice(colon+1).trim();
+      } else {
+        const words = action.split(/\s+/);
+        title = words.slice(0,Math.min(8,words.length)).join(" ");
+      }
+    }
+
+    const inlineWhy = action.match(/\s+(?:\*?Why\*?|Rationale)\s*:\s*(.*)$/i);
+    if(!why && inlineWhy){
+      why = inlineWhy[1].trim();
+      action = action.slice(0,inlineWhy.index).trim();
+    }
+
+    return {n:m[1],title,action,why};
+  });
+}
+
+function renderPlaybook(text, memories){
+  const el=document.getElementById("playbook");
+  const steps=parsePlaybook(text);
+  if(!steps.length){
+    el.innerHTML='<div class="empty">The model returned a playbook format the dashboard could not parse. See AI Analysis below.</div>';
+    return;
+  }
+  const historicalIds=new Set(extractIncidents((memories||[]).join("\n")));
+  el.innerHTML=steps.map(s=>{
+    const why=s.why || "This step is part of the AI-synthesized investigation sequence. Verify it against the organization’s historical evidence before making a production change.";
+    const ids=[...historicalIds].filter(id => new RegExp("\\b"+id+"\\b","i").test(s.action+" "+s.why));
+    return `<div class="step">
+      <div class="num">${esc(s.n)}</div>
+      <div>
+        <h3>${esc(cleanMarkdown(s.title))}</h3>
+        <div class="action">${esc(cleanMarkdown(s.action)).replace(/\n/g,"<br>")}</div>
+        <div class="why"><strong>Why this step:</strong> ${esc(cleanMarkdown(why))}</div>
+        <div class="source-row">
+          ${ids.length ? ids.map(id=>`<span class="source history">${esc(id)} · historical</span>`).join("") : '<span class="source ai">AI-synthesized · verify before production action</span>'}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderCause(text){
+  const el=document.getElementById("cause");
+  const cleaned=cleanMarkdown(text);
+  if(!cleaned){el.classList.add("hidden");return;}
+  const lines=cleaned.split("\n").map(x=>x.trim()).filter(Boolean);
+  const first=lines.find(x=>x.length>30) || cleaned;
+  el.innerHTML=`<h3>Most supported hypothesis</h3><div class="main">${esc(first)}</div>
+    <div class="source-row"><span class="source history">Supported by recalled incidents</span><span class="source ai">Hypothesis · not certainty</span></div>`;
+  el.classList.remove("hidden");
+}
+
+function renderEvidence(text, memories){
+  const el=document.getElementById("evidence");
+  const raw=String(text||"").replace(/\r/g,"");
+  const lines=raw.split("\n");
+  const rows=lines.filter(x=>x.trim().startsWith("|") && x.trim().endsWith("|"));
+
+  if(rows.length >= 2){
+    const cleanCells = row => row.trim().slice(1,-1).split("|").map(c=>cleanMarkdown(c.trim()));
+    const header = cleanCells(rows[0]);
+    const body = rows.slice(1).filter(r=>!/^\s*\|?\s*:?-{2,}/.test(r));
+    const htmlRows = body.map(r=>{
+      const cells=cleanCells(r);
+      const incident=cells[0] || "Historical incident";
+      return `<div class="evidence-card">
+        <div class="evidence-card-top">
+          <strong>${esc(incident)}</strong>
+          <span class="incident-chip">${esc(incident.match(/(?:INC|HIST)-\d+/i)?.[0] || "HISTORICAL")}</span>
+        </div>
+        <div class="evidence-grid">
+          ${cells.slice(1).map((c,i)=>`<div><span>${esc(header[i+1] || "Evidence")}</span><p>${esc(c)}</p></div>`).join("")}
+        </div>
+      </div>`;
+    }).join("");
+
+    el.innerHTML = htmlRows || paragraphs(raw);
+    return;
+  }
+
+  const ids=extractIncidents(raw);
+  const all=[...new Set(ids.length?ids:extractIncidents((memories||[]).join("\n")))];
+  el.innerHTML = paragraphs(raw) + (all.length ? `<div class="evidence">${all.map(id=>`<span class="incident-chip">${esc(id)}</span>`).join("")}</div>` : "");
+}
+
+
+
+function showAskAgain(){
+  document.getElementById("askAgainBox").classList.remove("hidden");
+  document.getElementById("followupEvidence").focus();
+  document.getElementById("followupStatus").classList.add("hidden");
+}
+
+function showResolutionForm(){
+  const form = document.getElementById("resolveForm");
+  if(form){
+    form.scrollIntoView({behavior:"smooth", block:"center"});
+    const root = document.getElementById("rootCause");
+    if(root) root.focus();
+  }
+}
+
+async function askAgain(){
+  const evidence = document.getElementById("followupEvidence").value.trim();
+  if(!evidence){
+    const s=document.getElementById("followupStatus");
+    s.classList.remove("hidden");
+    s.textContent="Add what happened when you tried the recommended step.";
+    return;
+  }
+
+  const payload={
+    incident_id:document.getElementById("incidentId").value.trim(),
+    service:document.getElementById("service").value.trim(),
+    symptom:document.getElementById("symptom").value.trim() +
+      "\\n\\nCRITICAL INVESTIGATION UPDATE — PREVIOUS HYPOTHESIS FAILED." +
+      "\\nThe previous recommended resolution was attempted and DID NOT resolve the incident." +
+      "\\nNew evidence from the developer: " + evidence +
+      "\\nDo NOT treat the previous hypothesis as confirmed. Reassess the root cause using this new evidence. " +
+      "Explicitly identify which previous hypothesis is weakened or ruled out, then prioritize alternative causes supported by organizational history. " +
+      "Do not simply repeat the previous resolution unless the new evidence supports it.",
+    error_rate:document.getElementById("errorRate").value.trim(),
+    started:document.getElementById("started").value.trim(),
+    recent_deployment:document.getElementById("deployment").value.trim()
+  };
+
+  if(!payload.incident_id || !payload.service || !payload.symptom){
+    document.getElementById("followupStatus").classList.remove("hidden");
+    document.getElementById("followupStatus").textContent="Incident ID, service and symptom are required.";
+    return;
+  }
+
+  const btn=document.getElementById("askAgainBtn");
+  btn.disabled=true;
+  btn.textContent="Reassessing with Organizational Memory...";
+
+  try{
+    const res=await fetch(API_BASE+"/analyze",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error(await res.text());
+
+    const data=await res.json();
+    const analysis=data.analysis||"";
+    const memories=data.memories||[];
+
+    const assessment=section(analysis,"INCIDENT ASSESSMENT");
+    const patterns=section(analysis,"ORGANIZATIONAL PATTERNS");
+    const cause=section(analysis,"MOST LIKELY ROOT CAUSE");
+    const evidenceSection=section(analysis,"HISTORICAL EVIDENCE");
+    const playbook=section(analysis,"RESOLUTION PLAYBOOK");
+
+    document.getElementById("results").classList.remove("hidden");
+    document.getElementById("memoryCount").textContent=data.memory_count ?? memories.length;
+    document.getElementById("incidentCount").textContent=new Set(extractIncidents(memories.join("\\n"))).size;
+    document.getElementById("assessment").innerHTML=paragraphs(assessment);
+    renderCause(cause);
+    renderMemories(memories);
+    renderPatterns(patterns);
+    renderPlaybook(playbook,memories);
+    renderEvidence(evidenceSection,memories);
+    document.getElementById("raw").textContent=analysis;
+
+    const status=document.getElementById("followupStatus");
+    status.classList.remove("hidden");
+    status.innerHTML="<strong>↻ Investigation updated.</strong> The failed attempt is treated as negative evidence. The copilot reassessed the incident and did not save the failed hypothesis as organizational truth.";
+    status.style.borderColor="rgba(111,156,255,.3)";
+    status.style.background="rgba(111,156,255,.08)";
+
+    document.getElementById("followupEvidence").value="";
+    document.getElementById("statusText").textContent="Reassessment complete — new evidence was incorporated without learning the failed hypothesis.";
+    document.getElementById("results").scrollIntoView({behavior:"smooth"});
+  }catch(err){
+    const status=document.getElementById("followupStatus");
+    status.classList.remove("hidden");
+    status.textContent="Could not reassess: " + err.message;
+    status.style.borderColor="rgba(242,123,136,.3)";
+    status.style.background="rgba(242,123,136,.08)";
+  }finally{
+    btn.disabled=false;
+    btn.textContent="Ask Again with New Evidence";
+  }
+}
+
+async function resolveAndLearn(){
+  const incidentId = document.getElementById("incidentId").value.trim();
+  const service = document.getElementById("service").value.trim();
+  const rootCause = document.getElementById("rootCause").value.trim();
+  const resolution = document.getElementById("resolution").value.trim();
+  const outcome = document.getElementById("outcome").value.trim();
+  const resolutionTime = document.getElementById("resolutionTime").value.trim();
+
+  if(!incidentId || !service || !rootCause || !resolution || !outcome || !resolutionTime){
+    document.getElementById("learnMessage").textContent = "Please complete the confirmed root cause, resolution, outcome and resolution time.";
+    document.getElementById("learnSuccess").classList.remove("hidden");
+    document.getElementById("learnSuccess").style.borderColor = "rgba(242,123,136,.3)";
+    document.getElementById("learnSuccess").style.background = "rgba(242,123,136,.08)";
+    return;
+  }
+
+  const btn = document.getElementById("resolveBtn");
+  btn.disabled = true;
+  btn.textContent = "Updating organization memory...";
+
+  try{
+    const res = await fetch(API_BASE + "/learn", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        incident_id: incidentId,
+        service: service,
+        root_cause: rootCause,
+        resolution: resolution,
+        outcome: outcome,
+        resolution_time: resolutionTime
+      })
+    });
+
+    if(!res.ok) throw new Error(await res.text());
+
+    const data = await res.json();
+    document.getElementById("learnSuccess").classList.remove("hidden");
+    document.getElementById("learnSuccess").style.borderColor = "rgba(77,212,164,.3)";
+    document.getElementById("learnSuccess").style.background = "rgba(77,212,164,.08)";
+    document.getElementById("learnMessage").textContent =
+      data.message || "Incident resolved. The confirmed experience is now available to future incident analyses.";
+    btn.textContent = "✓ Incident Resolved & Memory Updated";
+  }catch(err){
+    document.getElementById("learnSuccess").classList.remove("hidden");
+    document.getElementById("learnSuccess").style.borderColor = "rgba(242,123,136,.3)";
+    document.getElementById("learnSuccess").style.background = "rgba(242,123,136,.08)";
+    document.getElementById("learnMessage").textContent = "Could not update organization memory: " + err.message;
+    btn.disabled = false;
+    btn.textContent = "Mark Resolved & Update Organization Memory";
+  }
+}
+
+async function analyze(){
+  const payload={
+    incident_id:document.getElementById("incidentId").value.trim(),
+    service:document.getElementById("service").value.trim(),
+    symptom:document.getElementById("symptom").value.trim(),
+    error_rate:document.getElementById("errorRate").value.trim(),
+    started:document.getElementById("started").value.trim(),
+    recent_deployment:document.getElementById("deployment").value.trim()
+  };
+  if(!payload.incident_id||!payload.service||!payload.symptom){
+    document.getElementById("statusText").textContent="Incident ID, service and symptom are required.";
+    return;
+  }
+  const btn=document.getElementById("analyzeBtn");
+  btn.disabled=true; btn.textContent="Recalling organizational experience...";
+  document.getElementById("statusText").textContent="Hindsight is searching the organization’s incident memory.";
+  try{
+    const res=await fetch(API_BASE+"/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    if(!res.ok) throw new Error(await res.text());
+    const data=await res.json();
+    const analysis=data.analysis||"";
+    const memories=data.memories||[];
+    const assessment=section(analysis,"INCIDENT ASSESSMENT");
+    const patterns=section(analysis,"ORGANIZATIONAL PATTERNS");
+    const cause=section(analysis,"MOST LIKELY ROOT CAUSE");
+    const evidence=section(analysis,"HISTORICAL EVIDENCE");
+    const playbook=section(analysis,"RESOLUTION PLAYBOOK");
+
+    document.getElementById("results").classList.remove("hidden");
+    document.getElementById("memoryCount").textContent=data.memory_count ?? memories.length;
+    document.getElementById("incidentCount").textContent=new Set(extractIncidents(memories.join("\n"))).size;
+    document.getElementById("assessment").innerHTML=paragraphs(assessment);
+    renderCause(cause);
+    renderMemories(memories);
+    renderPatterns(patterns);
+    renderPlaybook(playbook,memories);
+    renderEvidence(evidence,memories);
+    document.getElementById("raw").textContent=analysis;
+    document.getElementById("statusText").textContent="Analysis complete — recommendation synthesized from recalled organizational experience.";
+    document.getElementById("results").scrollIntoView({behavior:"smooth"});
+  }catch(err){
+    document.getElementById("statusText").innerHTML=`<div class="error">${esc(err.message)}</div>`;
+  }finally{
+    btn.disabled=false; btn.textContent="Analyze with Organizational Memory";
+  }
+}
+</script>
+</body>
+</html>
